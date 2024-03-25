@@ -1,9 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
 import { useGLTF, OrbitControls, useTexture } from '@react-three/drei';
+import { DoubleSide, TextureLoader, RepeatWrapping } from 'three';
+
+
+
 import coffeeSmokeVertexShader from './shaders/coffeeSmoke/vertex.glsl'
 import coffeeSmokeFragmentShader from './shaders/coffeeSmoke/fragment.glsl'
-import { DoubleSide } from 'three';
+import { useFrame, useLoader } from '@react-three/fiber';
 
 export default function Experience()
 {
@@ -11,9 +14,18 @@ export default function Experience()
     const bakedTexture = useTexture('./model/Baked.jpg')
     bakedTexture.flipY = false
     const { nodes } = useGLTF('./model/coffee.glb')
-    console.log(nodes);
+    const smokeshadermaterial = useRef()
 
-  
+    const perlinTexture = useLoader(TextureLoader, '/perlin.png')
+    perlinTexture.wrapS = RepeatWrapping
+    perlinTexture.wrapT = RepeatWrapping
+
+
+    useFrame((state, delta) => {
+        smokeshadermaterial.current.uniforms.utime.value += delta;
+
+      });
+
     return <>
 
         <color args={['black']} attach="background"/>
@@ -27,14 +39,24 @@ export default function Experience()
             <mesh geometry={nodes.Plane001_3.geometry}>
                 <meshBasicMaterial map={bakedTexture} />
             </mesh>
-            <mesh position-y={1.2} scale={[0.3, 2, 1.5]}>
+            <mesh position-y={1.3} scale={[0.2, 2, 0.3]}>
                 {/* Ici, on reproduit THREE.PlaneGeometry(1, 1, 16, 64) en spécifiant les props correspondants */}
                 <planeGeometry args={[1, 1, 16, 64]} />
                 {/* ShaderMaterial avec wireframe activé */}
                 <shaderMaterial 
+                ref={smokeshadermaterial}
                 vertexShader={coffeeSmokeVertexShader}
                 fragmentShader={coffeeSmokeFragmentShader}
+                uniforms={ 
+                    {
+                        utime: {value : 0},
+                        uPerlinTexture: {value : perlinTexture}
+                }
+                }
                 side={DoubleSide}
+                transparent
+                depthWrite={false}
+
                  />
             </mesh>
 
